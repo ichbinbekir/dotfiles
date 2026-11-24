@@ -153,13 +153,26 @@ Sahibi `~/Documents/nos/.git`'i kaldırdı; `~/Documents/nos/dotfiles/` artık k
 - **`.chezmoiignore`**: `README.md`, `CLAUDE.md`, `old` ev klasörüne yazılmıyor (önceden sadece README vardı; `old/` ve `CLAUDE.md` `~`'a kopyalanacaktı).
 - **README.md** yeni depoya göre yeniden yazıldı (eski metin nos kurulum programından ve `.chezmoiroot`'tan bahsediyordu).
 - `chezmoi apply --force` (önce `chezmoi diff` incelendi): yeni `~/.config/espanso/`, `~/.config/keyd/app.conf`, `~/.config/fish/functions/fish_prompt.fish`, `~/.config/systemd/user/default.target.wants/espanso.service` (bağlantı); `~/.config/fish/config.fish` (fish'in varsayılanıydı) dotfiles'taki ile değişti; `~/.config/fish` ve `functions` klasörleri 700 → 755; `~/.gitconfig` aynıydı. `chezmoi verify` temiz.
-- **Henüz işe yaramayanlar:** espanso bağlantısı espanso kurulana kadar boşa gösteriyor (systemd yok sayar; düz Arch'ta AUR `espanso-wayland`, servis dosyası `/usr/lib/systemd/user/espanso.service` olmalı, kurulunca kontrol edilmeli). keyd `app.conf` keyd + `python-dbus` kurulup `/etc/keyd/default.conf` (`[ids] *`, boş `[main]`, boş `[nomap]`) ve otomatik başlatma (`keyd-application-mapper -d`) yapılınca çalışır; kullanıcı `keyd` grubuna girmeli.
+- **Henüz işe yaramayanlar:** espanso bağlantısı espanso kurulana kadar boşa gösteriyor (systemd yok sayar; düz Arch'ta AUR `espanso-wayland`, servis dosyası `/usr/lib/systemd/user/espanso.service` olmalı, kurulunca kontrol edilmeli). keyd: aşağıda.
 - `~/Documents/nos/` içinde sahibinin bıraktığı `dotfiles-old/` (taşımadan önceki kopya) ve kökte `.chezmoiroot` artık kullanılmıyor; silinip silinmeyeceği sahibinin kararı.
 - Kullanım: Documents'taki depoda düzenle → commit + push → `chezmoi update`. Ev klasöründe değiştirilen dosyayı depoya almak `chezmoi re-add <dosya>` (chezmoi'nin kopyasına yazar; oradan `chezmoi git -- commit/push`, sonra Documents'ta `git pull`).
+
+### keyd: tuş eşleme (24 Kasım 2026)
+
+Sahibi `keyd` paketini kurmuştu (2.6.0); servis kapalı, `/etc/keyd/` boş, kullanıcı `keyd` grubunda değildi, `python-dbus` yoktu. Eski sistemdeki gibi (eski CLAUDE.md "Tuş eşleme (keyd)"): Sober'da ESDF, `.` ile aç/kapat, her yerde Caps Lock = F19.
+
+- **`python-dbus`** kuruldu: `keyd-application-mapper` KDE 6'da kwin betiği + D-Bus ile odaktaki pencereyi öğreniyor (`python-gobject` zaten vardı).
+- **`/etc/keyd/default.conf`**: eski `core/system_files/etc/keyd/default.conf` ile aynı (`[ids] *`, boş `[main]`, boş `[nomap]`). Bütün klavyeleri yakalar, hiçbir tuşu değiştirmez; bu olmadan uygulama eşlemeleri çalışmaz. Kurulum: geçici klasörden `sudo install -Dm644`.
+- **`keyd.service` açıldı** (`enable --now`).
+- **Kullanıcı `keyd` grubuna eklendi** (`usermod -aG keyd bekir`; mapper'ın keyd soketine erişimi). Grup ancak **yeniden başlatınca** geçerli (eski sistemde oturumu kapatıp açmak yetmedi).
+- **`dot_config/autostart/keyd-application-mapper.desktop`** (dotfiles): girişte `keyd-application-mapper`'ı başlatır. Eski sistemde `/etc/xdg/autostart` + `/usr/libexec` sarmalayıcısıydı (herkes için, `app.conf` yoksa çıkıyordu); artık kullanıcıya özel, `app.conf` de dotfiles'ta olduğu için sarmalayıcı gerekmiyor. `~/.config/autostart/`'a elle de kopyalandı (push + `chezmoi update` öncesi; içerik aynı).
+- Eşlemeler: `dot_config/keyd/app.conf` (`[*sober*]`, `[*]` `capslock = f19`). Bölüm adları KDE'nin `resourceClass`'ının küçük harf + `-` hali; keyd tuş adları ABD yerleşimine göre (Türkçe Q'da `.` = `slash`).
+- Kontrol: `systemctl is-active keyd`, `id` içinde `keyd`, yeniden başlattıktan sonra `pgrep -af keyd-application-mapper`; Caps Lock büyük harf açmamalı.
+- Geri almak: `sudo systemctl disable --now keyd; sudo rm /etc/keyd/default.conf; sudo gpasswd -d bekir keyd`; autostart dosyasını depodan ve `~/.config/autostart`'tan silmek.
 
 ## Sonraki adım adayları
 
 Sahibiyle adım adım konuşulacak, sorulmadan yapılmaz.
 
-- Eski listelerde olup yeni sistemde olmayan paketler (24 Kasım sayımı; sahibi seçecek): KDE `plasma-pa`, `kscreen`, `kde-gtk-config`, `breeze-gtk`, `kdeconnect`, `plasma-disks`, `plasma-systemmonitor`, `kinfocenter`, `discover`, `flatpak-kcm`; `ufw` + `plasma-firewall`; `snapper` (`btrfs-assistant` var); `keyd` + `python-dbus`; sanal makine `qemu-desktop`, `libvirt`, `dnsmasq`, `edk2-ovmf`, `swtpm`; `podman`, `distrobox`; `switcheroo-control`; `dosfstools`; AUR `espanso-wayland`, `zapret-git`, `cloudflare-warp-bin`. Gerekmeyenler (bootc/kurulum işi ya da başka donanım): `amd-ucode`, `dracut`, `skopeo`, `gum`, `xfsprogs`, `dbus-glib` (bootcrew'un temel listesinden).
+- Eski listelerde olup yeni sistemde olmayan paketler (24 Kasım sayımı; sahibi seçecek): KDE `plasma-pa`, `kscreen`, `kde-gtk-config`, `breeze-gtk`, `kdeconnect`, `plasma-disks`, `plasma-systemmonitor`, `kinfocenter`, `discover`, `flatpak-kcm`; `ufw` + `plasma-firewall`; `snapper` (`btrfs-assistant` var); sanal makine `qemu-desktop`, `libvirt`, `dnsmasq`, `edk2-ovmf`, `swtpm`; `podman`, `distrobox`; `switcheroo-control`; `dosfstools`; AUR `espanso-wayland`, `zapret-git`, `cloudflare-warp-bin`. Gerekmeyenler (bootc/kurulum işi ya da başka donanım): `amd-ucode`, `dracut`, `skopeo`, `gum`, `xfsprogs`, `dbus-glib` (bootcrew'un temel listesinden).
 - Eski CLAUDE.md'deki "Düz Arch'a taşınacaklar" listesi: paketler, AUR, servisler, ayar dosyaları, ufw, zram, snapper, keyd, espanso vb.

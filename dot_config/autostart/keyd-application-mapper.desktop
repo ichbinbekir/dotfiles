@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=keyd application mapper
+Comment=Per-window key mappings from ~/.config/keyd/app.conf (user must be in the keyd group)
+Exec=keyd-application-mapper
+NoDisplay=true
+X-KDE-autostart-phase=2

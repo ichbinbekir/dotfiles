@@ -12,7 +12,9 @@ Contents:
 - fish: `arrow` prompt, greeting off, `~/.local/bin` in `PATH`
 - git: user name and email
 - espanso: text abbreviations (`:date`, `:time`, `:mail`), Turkish Q layout
-- keyd: per-window key mapping (ESDF in Sober/Roblox, Caps Lock → F19)
+- keyd: per-window key mapping (ESDF in Sober/Roblox, Caps Lock → F19); `dot_config/autostart/` starts
+  `keyd-application-mapper` at login (needs the system-wide `/etc/keyd/default.conf`,
+  `python-dbus`, and the user in the `keyd` group)
 
 Not copied to the home folder (`.chezmoiignore`): this README, `CLAUDE.md`, `old/` (earlier
 Hyprland setup, kept for reference).

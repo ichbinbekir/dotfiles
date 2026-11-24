@@ -1,0 +1,4 @@
+# espanso general settings. On Wayland the keyboard layout must be set by hand; otherwise
+# keys are decoded as the US layout and abbreviations don't match on Turkish Q.
+keyboard_layout:
+  layout: "tr"

@@ -1,0 +1,21 @@
+# Text abbreviations: replaced as you type. Add a "- trigger/replace" for a new one;
+# espanso reloads the file automatically when it is saved.
+matches:
+  - trigger: ":date"
+    replace: "{{date}}"
+    vars:
+      - name: date
+        type: date
+        params:
+          format: "%d.%m.%Y"
+
+  - trigger: ":time"
+    replace: "{{time}}"
+    vars:
+      - name: time
+        type: date
+        params:
+          format: "%H:%M"
+
+  - trigger: ":mail"
+    replace: "bekiirun@gmail.com"

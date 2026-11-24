@@ -149,13 +149,13 @@ Eski sistemden yedek: `/mnt/sidedisk/onceki pc/ssh.tar.gz` (sahibinin; yerinde d
 
 Sahibi `~/Documents/nos/.git`'i kaldırdı; `~/Documents/nos/dotfiles/` artık kendi deposu (`git@github.com:ichbinbekir/dotfiles.git`, dal `master`; eski Hyprland ayarları `old/`'da, geçmiş korunuyor). Eski düzende kaynak nos deposuydu ve kökteki `.chezmoiroot` (`dotfiles`) chezmoi'yi bu klasöre yönlendiriyordu; artık depo kökü doğrudan chezmoi kaynağı, `.chezmoiroot` gerekmiyor.
 
-- **`~/.config/chezmoi/chezmoi.toml`**: `sourceDir = "~/Documents/nos/dotfiles"`. chezmoi kendi kopyasını (`~/.local/share/chezmoi`) tutmuyor, doğrudan bu çalışma kopyasını kullanıyor (tek kopya; düzenle → `chezmoi apply`). Makineye özel olduğu için depoya girmez. Depo başka bir yere taşınırsa bu satır güncellenir.
+- **chezmoi kaynağı `~/.local/share/chezmoi`** (chezmoi'nin varsayılanı; GitHub'dan `chezmoi init` ile klonlandı). `~/Documents/nos/dotfiles` ayrı bir çalışma kopyası (sahibi `nos` klasörünü ileride taşıyabilir; chezmoi buna bağlı olmasın diye, sahibinin kararı). İlk denemede `~/.config/chezmoi/chezmoi.toml` `sourceDir` ile bu klasör kaynak yapılmıştı, sahibi istemedi, silindi. İki kopya GitHub üzerinden eşitlenir: Documents'ta commit + push → `chezmoi update` (çek + uygula); ya da `chezmoi cd` ile chezmoi'nin kopyasında çalışılır.
 - **`.chezmoiignore`**: `README.md`, `CLAUDE.md`, `old` ev klasörüne yazılmıyor (önceden sadece README vardı; `old/` ve `CLAUDE.md` `~`'a kopyalanacaktı).
 - **README.md** yeni depoya göre yeniden yazıldı (eski metin nos kurulum programından ve `.chezmoiroot`'tan bahsediyordu).
 - `chezmoi apply --force` (önce `chezmoi diff` incelendi): yeni `~/.config/espanso/`, `~/.config/keyd/app.conf`, `~/.config/fish/functions/fish_prompt.fish`, `~/.config/systemd/user/default.target.wants/espanso.service` (bağlantı); `~/.config/fish/config.fish` (fish'in varsayılanıydı) dotfiles'taki ile değişti; `~/.config/fish` ve `functions` klasörleri 700 → 755; `~/.gitconfig` aynıydı. `chezmoi verify` temiz.
 - **Henüz işe yaramayanlar:** espanso bağlantısı espanso kurulana kadar boşa gösteriyor (systemd yok sayar; düz Arch'ta AUR `espanso-wayland`, servis dosyası `/usr/lib/systemd/user/espanso.service` olmalı, kurulunca kontrol edilmeli). keyd `app.conf` keyd + `python-dbus` kurulup `/etc/keyd/default.conf` (`[ids] *`, boş `[main]`, boş `[nomap]`) ve otomatik başlatma (`keyd-application-mapper -d`) yapılınca çalışır; kullanıcı `keyd` grubuna girmeli.
 - `~/Documents/nos/` içinde sahibinin bıraktığı `dotfiles-old/` (taşımadan önceki kopya) ve kökte `.chezmoiroot` artık kullanılmıyor; silinip silinmeyeceği sahibinin kararı.
-- Kullanım: ayar değişince depoda düzenle + `chezmoi apply`; ev klasöründe değiştirilen dosyayı depoya almak `chezmoi re-add <dosya>` (ya da `chezmoi add` yeni dosya için); sonra commit.
+- Kullanım: Documents'taki depoda düzenle → commit + push → `chezmoi update`. Ev klasöründe değiştirilen dosyayı depoya almak `chezmoi re-add <dosya>` (chezmoi'nin kopyasına yazar; oradan `chezmoi git -- commit/push`, sonra Documents'ta `git pull`).
 
 ## Sonraki adım adayları
 

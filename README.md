@@ -23,9 +23,4 @@ Hyprland setup, kept for reference).
 chezmoi init --apply git@github.com:ichbinbekir/dotfiles.git
 ```
 
-To keep the source in a different folder instead of `~/.local/share/chezmoi`, set it in
-`~/.config/chezmoi/chezmoi.toml` before applying:
-
-```toml
-sourceDir = "~/path/to/dotfiles"
-```
+Update later: `chezmoi update` (pulls and applies).

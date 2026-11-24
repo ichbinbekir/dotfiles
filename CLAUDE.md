@@ -180,9 +180,20 @@ Sahibi root'a doğrudan girilmesin, sadece `sudo` ile geçilsin istedi (eski sis
 - Geri almak: `sudo passwd -u root` (eski şifre geri gelir) ya da `sudo passwd root` ile yeni şifre.
 - Kontrol: `sudo passwd -S root` → ikinci alan `L`.
 
+### Podman (25 Kasım 2026)
+
+Docker yerine Podman (Claude'un önerisi, sahibi kabul etti; gerekirse Docker'a geçilebilir): arka plan servisi yok, kapsayıcılar kullanıcıyla (rootless) çalışır, `docker` grubu = root yetkisi sorunu yok, eski sistemde de vardı.
+
+- **Paketler:** `podman` + `crun` (OCI çalışma ortamı; açıkça yazıldı ki pacman `crun`/`runc` arasında sormasın). Bağımlılıklar kendiliğinden (conmon, containers-common, passt, netavark, catatonit).
+- `/etc/subuid` ve `/etc/subgid`'de `bekir:100000:65536` kurulumdan beri var; rootless için ek ayar gerekmedi.
+- İmajlar ve kapsayıcılar `~/.local/share/containers/` (btrfs `@home`). Ev klasörüne snapper kurulursa bunlar da snapshot'a girer; o zaman ayrı alt birim düşünülmeli.
+- Kısa imaj adları (`alpine`) registry sorabilir; tam ad (`docker.io/library/alpine`) kullanılır.
+- Docker'a geçiş: `sudo pacman -Rns podman` + `docker`; imajlar yeniden indirilir, kapsayıcı/volume'ler taşınmaz. Docker'a bağlı bir araç sorun çıkarırsa önce `podman-docker` (+ `podman.socket` kullanıcı servisi) denenir.
+- Compose: henüz kurulmadı (gerekince `docker-compose` + `podman.socket`, ya da `podman-compose`).
+
 ## Sonraki adım adayları
 
 Sahibiyle adım adım konuşulacak, sorulmadan yapılmaz.
 
-- Eski listelerde olup yeni sistemde olmayan paketler (24 Kasım sayımı; sahibi seçecek): KDE `plasma-pa`, `kscreen`, `kde-gtk-config`, `breeze-gtk`, `kdeconnect`, `plasma-disks`, `plasma-systemmonitor`, `kinfocenter`, `discover`, `flatpak-kcm`; `ufw` + `plasma-firewall`; `snapper` (`btrfs-assistant` var); sanal makine `qemu-desktop`, `libvirt`, `dnsmasq`, `edk2-ovmf`, `swtpm`; `podman`, `distrobox`; `switcheroo-control`; `dosfstools`; AUR `espanso-wayland`, `zapret-git`, `cloudflare-warp-bin`. Gerekmeyenler (bootc/kurulum işi ya da başka donanım): `amd-ucode`, `dracut`, `skopeo`, `gum`, `xfsprogs`, `dbus-glib` (bootcrew'un temel listesinden).
+- Eski listelerde olup yeni sistemde olmayan paketler (24 Kasım sayımı; sahibi seçecek): KDE `plasma-pa`, `kscreen`, `kde-gtk-config`, `breeze-gtk`, `kdeconnect`, `plasma-disks`, `plasma-systemmonitor`, `kinfocenter`, `discover`, `flatpak-kcm`; `ufw` + `plasma-firewall`; `snapper` (`btrfs-assistant` var); sanal makine `qemu-desktop`, `libvirt`, `dnsmasq`, `edk2-ovmf`, `swtpm`; `distrobox`; `switcheroo-control`; `dosfstools`; AUR `espanso-wayland`, `zapret-git`, `cloudflare-warp-bin`. Gerekmeyenler (bootc/kurulum işi ya da başka donanım): `amd-ucode`, `dracut`, `skopeo`, `gum`, `xfsprogs`, `dbus-glib` (bootcrew'un temel listesinden).
 - Eski CLAUDE.md'deki "Düz Arch'a taşınacaklar" listesi: paketler, AUR, servisler, ayar dosyaları, ufw, zram, snapper, keyd, espanso vb.

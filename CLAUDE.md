@@ -1,0 +1,165 @@
+# Yeni sistem (düz Arch) notları
+
+Sahibi 23 Kasım 2026'da bootc'li `nos`'u bıraktı ve normal bir Arch kurulumuna geçti. Bu depo (`github.com/ichbinbekir/dotfiles`, chezmoi kaynağı) sahibinin kişisel ayarlarını tutuyor; bu dosya ayrıca yeni sistemde yapılan bütün ayarların (sistem geneli dahil) kaydı. **Eski proje** `~/Documents/nos/` (artık git deposu değil; içinde bu depo da duruyor): oradaki `CLAUDE.md` (aşağıda "eski CLAUDE.md") ve `core/`, `machines/` gibi yollar eski sistemin; gerekçe, taşınacaklar listesi, paket listeleri, donanım notları için başvuru.
+
+## Çalışma şekli
+
+- Cevaplar Türkçe, sade, teknik terimsiz. Sahibinin kabuğu **fish**: komutlar fish biçiminde (heredoc yok; `printf ... | sudo tee`, `set`, `env VAR=...`).
+- **Bu depoya commit atılır** (conventional commit, İngilizce mesaj); **push sadece sahibi söyleyince.** Eski `nos` artık git deposu değil.
+- `sudo` şifre istiyor; Claude sistem dosyalarını kendisi yazamaz. Komutlar sohbette verilir, sahibi çalıştırır.
+- **Her dosya değişikliği aşağıdaki "Yapılan değişiklikler"e yazılır** (hangi dosya, ne, neden, nasıl geri alınır) ve sohbette de söylenir.
+- **Kalıntı bırakılmaz.** Geçici dosyalar (indirmeler, denemeler, derleme klasörleri) sadece `~/.cache/` ya da `/tmp` gibi silinebilir yerlerde. Bir paketin kendi dosyasının üstüne yazılmaz; ek ayar dosyası (`/etc/...d/`) kullanılır. Gereksiz paket, servis, dosya eklenmez.
+- Bir şey yapılmadan önce mevcut durum kontrol edilir (dosya var mı, ne yazıyor).
+- **Ev klasörüne giden her ayar bu depoya da eklenir** (sahibinin kuralı). Sistem geneline (`/etc`) yazılanlar buraya girmez, sadece bu dosyada not edilir. Gizli bilgiler (SSH anahtarı, şifre, token) asla girmez.
+- README İngilizce; bu dosya Türkçe.
+
+## Sistem
+
+- Acer Nitro AN16-51, Arch, KDE Plasma 6.8 (Wayland), çekirdek 7.3.x. Bilgisayar adı `billmonster`, kullanıcı `bekir`.
+- Sistem dili İngilizce (`LANG=en_US.UTF-8`), klavye Türkçe Q.
+- Giriş ekranı (SDDM) KWin Wayland ile (aşağıda "Giriş ekranı Wayland'de").
+
+## Yapılan değişiklikler
+
+### Klavye: Türkçe Q (24 Kasım 2026)
+
+Sahibi `/etc/vconsole.conf`'a `KEYMAP=trq` yazmıştı (sadece metin ekranı). Giriş ekranı ve KDE ABD düzenindeydi (`localectl`: "X11 Layout: (unset)", `~/.config/kxkbrc` yok).
+
+- **`/etc/X11/xorg.conf.d/00-keyboard.conf`**: `sudo localectl --no-convert set-x11-keymap tr pc105` ile (localed yazıyor; `--no-convert` vconsole'a dokunmasın diye). Giriş ekranı (SDDM, X11) bunu kullanıyor. SDDM ileride Wayland'e alınırsa KWin `--locale1` ile aynı ayarı localed'den okur, değişiklik gerekmez.
+- **`/etc/xdg/kxkbrc`** (`[Layout]` `LayoutList=tr`, `Use=true`): KDE oturumu (KWin) düzeni localed'den değil kullanıcının `kxkbrc`'sinden okuyor; `/etc/xdg` bütün kullanıcılar için varsayılan. Sahibi KDE Ayarları'nda klavyeyi değiştirirse `~/.config/kxkbrc` oluşur ve bunu ezer (normal).
+- Geri almak: `sudo rm /etc/X11/xorg.conf.d/00-keyboard.conf /etc/xdg/kxkbrc`.
+- Kontrol: `localectl status` → "X11 Layout: tr"; giriş ekranında ve KDE'de `ı`/`i`/`ş` tuşları.
+
+### Acer güç modları (24 Kasım 2026)
+
+Çekirdek 7.3.5'in `acer_wmi`'sinde AN16-51 hâlâ yok (listede AN515-58 var); sahibinin 7 Kasım yaması henüz gelmemiş. `predator_v4` kapalıydı, `/sys/firmware/acpi/platform_profile` yoktu, `power-profiles-daemon` kurulu ama kapalıydı.
+
+- **`/etc/modprobe.d/acer-nitro.conf`**: `options acer_wmi predator_v4=1` (eski sistemdeki `nos-acer.conf`'un aynısı; nedeni eski CLAUDE.md "Acer güç modları ve fanlar"). Güç modları, fan/ısı sensörleri, turbo tuşu. Fan hızını elle ayarlama (pwm) bununla açılmaz, yama gelince açılır.
+- **`power-profiles-daemon.service` açıldı** (`systemctl enable --now`): KDE'deki güç modu seçicisi bunu kullanıyor (eski sistemde de açıktı).
+- Kalkar: yama Arch çekirdeğine gelince `/etc/modprobe.d/acer-nitro.conf` silinir (kontrol: `zstdcat (modinfo -n acer_wmi) | strings | grep AN16-51`).
+- Kontrol (yeniden başlattıktan sonra): `cat /sys/firmware/acpi/platform_profile_choices` → `low-power quiet balanced balanced-performance performance`; `powerprofilesctl`; turbo tuşu modları değiştiriyor.
+
+### Giriş ekranı Wayland'de (24 Kasım 2026)
+
+SDDM paketin varsayılanıyla X11'de çalışıyordu (`/usr/lib/sddm/sddm.conf.d/default.conf` `DisplayServer=x11`). Xorg oturum boyunca arkada kalıp NVIDIA kartını tutuyordu (eski sistemde görüldü).
+
+- **`/etc/sddm.conf.d/10-wayland.conf`**: eski sistemin `core/system_files/etc/sddm.conf.d/10-wayland.conf`'unun aynısı (`DisplayServer=wayland`, KWin `--drm --no-lockscreen --no-global-shortcuts --locale1`, `QT_WAYLAND_SHELL_INTEGRATION=layer-shell`). `/etc`'de olmalı (`/usr/lib/sddm/sddm.conf.d/`'de paketin `default.conf`'u alfabede sonra gelip ezer). Kurulum: Claude dosyayı kendi geçici klasörüne yazdı, sahibi `sudo install -Dm644 <dosya> /etc/sddm.conf.d/10-wayland.conf` ile kopyaladı.
+- Klavye: `--locale1` ile KWin düzeni localed'den (`00-keyboard.conf`'un kaynağı) alıyor; ek ayar gerekmez. Varsayılan temanın göstergesi Wayland'de "Layout ?? zz" yazabilir, düzen yine doğru (eski sistemde görüldü).
+- `xorg-server` sddm'in bağımlılığı olarak kurulu kalıyor, kullanılmıyor.
+- Geri almak: `sudo rm -r /etc/sddm.conf.d`.
+- Kontrol: girişten sonra `pgrep -a Xorg` boş olmalı. NVIDIA kartının boştayken uyuması ayrıca çekirdek 7.3'teki RTD3 sorununa bağlı (eski CLAUDE.md "Hibrit grafik"), bu ayar onu çözmez.
+
+### Açılış animasyonu (plymouth) (24 Kasım 2026)
+
+Açılış yöneticisi **GRUB** (2.16; `/boot/grub/grub.cfg`), initramfs **mkinitcpio** (`HOOKS=(base systemd autodetect microcode modconf keyboard sd-vconsole block filesystems fsck)`, `kms` yok). Sahibi `plymouth` paketini kurmuştu; tema Arch varsayılanı `bgrt` (`/etc/plymouth/plymouthd.conf`: UEFI üretici logosu + dönen simge).
+
+- **`/etc/default/grub`**: `GRUB_CMDLINE_LINUX_DEFAULT`'a `splash` eklendi (`loglevel=3 quiet splash zswap.enabled=0`). GRUB'da `.d` ek dosyası yok (Arch'ın GRUB'u desteklemiyor), dosyanın kendisi `sed` ile düzenlendi.
+- **`/etc/mkinitcpio.conf`**: `HOOKS`'a `systemd`'den hemen sonra `plymouth` (Arch Wiki). `conf.d` ek dosyası bütün `HOOKS` dizisini kopyalamayı gerektirdiği için ana dosya düzenlendi.
+- Ardından `mkinitcpio -P` ve `grub-mkconfig -o /boot/grub/grub.cfg`.
+- `kms` hook'u bilerek eklenmedi: plymouth initramfs'te çekirdeğin `simpledrm`'iyle başlıyor, i915 yüklenince geçiyor (bir an titreme olabilir). Rahatsız ederse `kms` eklenebilir (NVIDIA modülleri `drivers/gpu/drm` altında olmadığı için girmez).
+- `sddm.service` zaten `After=plymouth-quit.service`.
+- Geri almak: iki `sed`'in tersi (`splash` ve `plymouth` kelimelerini silmek), sonra yine `mkinitcpio -P` ve `grub-mkconfig`.
+- Açılışta Esc yazıları gösterir.
+
+### Takas: zram (24 Kasım 2026)
+
+`zram-generator` kuruluydu ama ayar dosyası yoktu, sistemde hiç takas yoktu (`swapon` boş). Çekirdek satırında `zswap.enabled=0` var (kurulumdan; zram ile zswap birlikte kullanılmaz, doğru).
+
+- **`/etc/systemd/zram-generator.conf`**: eski sistemdeki `core/system_files/usr/lib/systemd/zram-generator.conf`'un aynısı: `[zram0]` `zram-size = min(ram, 8192)` (16 GB RAM'de 8 GB), `compression-algorithm = zstd`. Paket `/usr/lib`'e dosya koymuyor; `/etc` yöneticinin yeri.
+- Açılışta generator kendisi kuruyor; ilk sefer `systemctl daemon-reload` + `systemctl start systemd-zram-setup@zram0.service` ile yeniden başlatmadan açıldı.
+- swappiness gibi sysctl ayarı yapılmadı (eski sistemde de yoktu).
+- Disk swap yok. Kurulumdan kalma boş bir `@swap` btrfs alt birimi `/swap`'a bağlı (`/etc/fstab`); içinde dosya yok. Eski sistemdeki açık konu (zram arkasına 16 GB swapfile, hazırda bekletme) için hazır duruyor; istenmezse fstab satırı + alt birim silinebilir.
+- Geri almak: `sudo swapoff /dev/zram0; sudo rm /etc/systemd/zram-generator.conf; sudo systemctl daemon-reload`.
+- Kontrol: `zramctl` (zstd, 8G), `swapon --show`.
+
+### İşlemci zamanlayıcısı: bpfland (24 Kasım 2026)
+
+Çekirdekte `CONFIG_SCHED_CLASS_EXT=y`; önce `/sys/kernel/sched_ext/state` `disabled`. Eski sistemdeki gibi (eski CLAUDE.md "sched_ext").
+
+- **Paketler:** `scx-scheds` (bütün zamanlayıcılar, ~154 MB; tek paket, ayıklanmıyor) + `scx-tools` (`scx_loader` servisi, `scxctl`, `scxtui`).
+- **`/etc/scx_loader.toml`**: eski sistemin `core/system_files/etc/scx_loader.toml`'unun aynısı: `default_sched = "scx_bpfland"`, `default_mode = "Auto"`. scx_loader sırayla `/etc/scx_loader/config.toml` → `/etc/scx_loader.toml` → `/usr/share/scx_loader/config.toml` (paketinki, `default_sched` yorumda) arıyor. Kurulum: Claude dosyayı kendi geçici klasörüne yazdı, sahibi `sudo install -Dm644` ile kopyaladı.
+- **`scx_loader.service` açıldı** (`enable --now`; paket açmıyor).
+- Değiştirmek: dosyada `scx_lavd`; geçici `scxctl switch -s lavd`, `scxctl stop`.
+- Geri almak: `sudo systemctl disable --now scx_loader.service; sudo rm /etc/scx_loader.toml; sudo pacman -Rns scx-tools scx-scheds`.
+- Kontrol: `cat /sys/kernel/sched_ext/state` → `enabled`, `cat /sys/kernel/sched_ext/root/ops` → `bpfland...`, `scxctl get`.
+- İşlemci hibrit (P+E çekirdek); bpfland bunu hesaba katıyor. Oyunda davranışı sahibinin deneyimine göre değerlendirilecek (alternatif lavd).
+
+### Yan disk (NTFS) (24 Kasım 2026)
+
+Diskler: `nvme1n1` sistem (2 GB EFI `/boot/efi` + btrfs; alt birimler `@`, `@home`, `@log`, `@cache`, `@snapshots`, `@swap`; Windows artık yok), `nvme0n1` veri diski: tek NTFS bölümü `nvme0n1p1`, etiket "Side Disk", UUID `FE7E04597E040D59`. Çekirdekte iki NTFS sürücüsü var: `ntfs3` (Paragon, 5.15'ten beri) ve yeni `ntfs`; `ntfs-3g` de kurulu.
+
+- **`/etc/fstab`'a satır** (sona eklendi):
+  `UUID=FE7E04597E040D59  /mnt/sidedisk  ntfs3  uid=1000,gid=1000,umask=022,windows_names,noatime,nofail  0 0`
+  - `ntfs3`: çekirdeğin olgun sürücüsü, ntfs-3g'den (FUSE) hızlı. Yeni `ntfs` sürücüsü çok yeni olduğu için seçilmedi.
+  - `uid/gid=1000`, `umask=022`: dosyalar `bekir`'in, diğerleri okuyabilir. `windows_names`: Windows'un kabul etmediği adlarla dosya oluşturmayı engeller. `nofail`: disk yoksa ya da bağlanamazsa açılış durmaz.
+  - Bağlama noktası `/mnt/sidedisk` (sahibinin alışkanlığı; kalıcı, elle tanımlı diskler için `/mnt` doğru yer, `/media` çıkarılabilir diskler için).
+- Uygulama: `sudo systemctl daemon-reload; sudo mount -a` (systemd bağlama noktası klasörünü kendisi oluşturur).
+- Bağlanmazsa: ntfs3 "kirli" işaretli (düzgün kapatılmamış) NTFS'i yazılabilir bağlamaz; `sudo ntfsfix -d /dev/nvme0n1p1`.
+- Proton/Steam oyunları NTFS'te güvenilir çalışmaz (eski not); Linux oyunları btrfs'te.
+- Snapshot'lanmıyor; ayrı yedek önerildi (eski not).
+- Geri almak: `sudo umount /mnt/sidedisk`, fstab'dan satırı silmek, `sudo systemctl daemon-reload`, `sudo rmdir /mnt/sidedisk`.
+- **`fstrim.timer` açıldı** (sahibi, `enable --now`; eski sistemde de açıktı). Ana disk btrfs `discard=async` ile zaten TRIM yapıyor; timer yan disk ve EFI için.
+
+### Servisler (24 Kasım 2026)
+
+Eski `core/services.txt` + `machines/nitro/services.txt` ile karşılaştırıldı. Açık olanlar: sddm, NetworkManager (+ `-wait-online`, `-dispatcher`), bluetooth, power-profiles-daemon, scx_loader, warp-svc, fstrim.timer.
+
+- **`systemd-timesyncd` açıldı:** kapalıydı, saat hiç eşitlenmiyordu (`timedatectl`: "System clock synchronized: no").
+- **`nvidia-powerd` açıldı:** Dynamic Boost (eski sistemde de açıktı; RTD3 ile ilgisi yok).
+- **`nvidia-suspend`/`-resume`/`-hibernate` kapatıldı:** kurulumda (14:16) açılmışlardı. Sürücü `UseKernelSuspendNotifiers: 1` ile video belleğini uykuda kendisi koruyor (`/proc/driver/nvidia/params`); eski sistemde de bu yüzden kapalıydı. Uykudan sonra sorun çıkarsa ilk bakılacak yer; geri açmak `systemctl enable nvidia-suspend nvidia-resume nvidia-hibernate`. (Uykudan sonra parlaklık sorunu bundan bağımsız, eski sistemde bu servisler kapalıyken de vardı.)
+- **Bekleyen (sahibi ayrıca karar verecek):** `systemd-resolved` (şifreli DNS için; zapret/mobil veri işiyle birlikte, `/etc/resolv.conf` bağlantısı gerekir), ufw, snapper zamanlayıcıları, keyd, libvirtd.socket, zapret, switcheroo-control (paketleri henüz kurulmadı).
+
+### systemd-oomd (24 Kasım 2026)
+
+RAM dolunca donma yerine baskıyı yapan uygulamayı kapatır. Arch'ta hiçbir birime izleme ayarı yok; eski sistemdeki gibi Fedora'nın `systemd-oomd-defaults`'ının aynısı (nedenler eski CLAUDE.md "systemd-oomd"). systemd 262.
+
+- **`/etc/systemd/oomd.conf.d/10-oomd.conf`**: `DefaultMemoryPressureDurationSec=20s`.
+- **`/etc/systemd/system/-.slice.d/10-oomd.conf`**: `ManagedOOMSwap=kill` (zram %90 dolunca en çok takas kullanan kapatılır).
+- **`/etc/systemd/system/user@.service.d/10-oomd.conf`**: `ManagedOOMMemoryPressure=kill`, `ManagedOOMMemoryPressureLimit=50%`.
+- **`/etc/systemd/user/-.slice.d/10-oomd.conf`**: aynı iki satır, **geçici çözüm** systemd#43174 (kullanıcı yöneticisi reload'da kök dilimini "auto" bildirip izlemeyi siliyor; 255–262'de var). Değerler `user@.service.d`'dekiyle aynı kalmalı. **Kalkar:** systemd düzeltince.
+- **`systemd-oomd.service` açıldı** (`enable --now`).
+- Kurulum: Claude dosyaları geçici klasörde `etc/systemd/...` ağacı olarak hazırladı, sahibi `sudo cp -rv` ile `/etc/systemd/`'ye kopyaladı; `daemon-reload` (sistem + `--user`).
+- Bedeli: baskı uzun sürerse uygulamanın tamamı uyarısız kapanır (tarayıcının bütün sekmeleri, ağır derleme yapan terminal).
+- Kontrol: `oomctl` → "Swap Monitored CGroups" altında `/`, "Memory Pressure Monitored CGroups" altında `/user.slice/user-1000.slice/user@1000.service` (limit 50%).
+- Geri almak: `sudo systemctl disable --now systemd-oomd`; dört dosyayı silmek; `sudo systemctl daemon-reload; systemctl --user daemon-reload`.
+
+### Açılış süresi (24 Kasım 2026, ölçüm)
+
+`systemd-analyze`: firmware 14.3 sn + loader (GRUB) 14.5 sn + kernel 0.5 sn + initrd 1.4 sn + userspace 2.4 sn = 33 sn. Servis tarafında yavaşlatan yok (en uzun NetworkManager 0.7 sn; hata veren servis yok). Eski sistemdeki `networkd-wait-online` sorunu burada yok (networkd kapalı); `NetworkManager-wait-online` açık ama açılışta onu bekleyen bir şey yok (sadece haftalık `archlinux-keyring-wkd-sync`), süreye etkisi yok.
+
+- Zamanın çoğu GRUB (menüde `GRUB_TIMEOUT=5` bekleme + dosya okuma) ve BIOS'ta.
+- **`/etc/default/grub`'a `GRUB_EARLY_INITRD_LINUX_STOCK=''` eklendi** (dosyanın sonuna; Arch Wiki, Microcode): `/boot/intel-ucode.img` (16 MB) GRUB'a ayrıca initrd olarak ekleniyordu, oysa mkinitcpio'nun `microcode` hook'u mikrokodu zaten initramfs'e koyuyor (çift yükleme). Ardından `grub-mkconfig`. Geri almak: satırı silip `grub-mkconfig -o /boot/grub/grub.cfg`. `/boot/intel-ucode.img` dosyası `intel-ucode` paketinin, durur (silinmez).
+- Menü süresi `GRUB_TIMEOUT=5` kalıyor (sahibinin kararı).
+- BIOS süresi (14 sn) Linux'tan düzeltilemez; Acer BIOS'unda "Fast Boot" varsa sahibi bakabilir.
+
+### SSH anahtarları (24 Kasım 2026)
+
+Eski sistemden yedek: `/mnt/sidedisk/onceki pc/ssh.tar.gz` (sahibinin; yerinde duruyor). Claude `~`'a izinleriyle açtı (`tar -xzpf`), `known_hosts.old` (eski yedek kopya) alınmadı.
+
+- **`~/.ssh/`**: `id_ed25519` (600) + `.pub`, `config` (GitHub'a `ssh.github.com:443` üzerinden; 22 numaralı port engelli ağlar için), `known_hosts`.
+- Doğrulandı: `ssh -T git@github.com` → "Hi ichbinbekir!".
+- Gizli bilgi: dotfiles'a ve hiçbir depoya girmez.
+
+### git kimliği (24 Kasım 2026)
+
+- **`~/.gitconfig`**: `git config --global` ile `user.name = ichbinbekir`, `user.email = bekiirun@gmail.com` (dosya yoktu).
+- **`dot_gitconfig`** (bu depoda): aynı içerik; chezmoi yönetiyor (aşağıda).
+
+### Dotfiles: chezmoi (24 Kasım 2026)
+
+Sahibi `~/Documents/nos/.git`'i kaldırdı; `~/Documents/nos/dotfiles/` artık kendi deposu (`git@github.com:ichbinbekir/dotfiles.git`, dal `master`; eski Hyprland ayarları `old/`'da, geçmiş korunuyor). Eski düzende kaynak nos deposuydu ve kökteki `.chezmoiroot` (`dotfiles`) chezmoi'yi bu klasöre yönlendiriyordu; artık depo kökü doğrudan chezmoi kaynağı, `.chezmoiroot` gerekmiyor.
+
+- **`~/.config/chezmoi/chezmoi.toml`**: `sourceDir = "~/Documents/nos/dotfiles"`. chezmoi kendi kopyasını (`~/.local/share/chezmoi`) tutmuyor, doğrudan bu çalışma kopyasını kullanıyor (tek kopya; düzenle → `chezmoi apply`). Makineye özel olduğu için depoya girmez. Depo başka bir yere taşınırsa bu satır güncellenir.
+- **`.chezmoiignore`**: `README.md`, `CLAUDE.md`, `old` ev klasörüne yazılmıyor (önceden sadece README vardı; `old/` ve `CLAUDE.md` `~`'a kopyalanacaktı).
+- **README.md** yeni depoya göre yeniden yazıldı (eski metin nos kurulum programından ve `.chezmoiroot`'tan bahsediyordu).
+- `chezmoi apply --force` (önce `chezmoi diff` incelendi): yeni `~/.config/espanso/`, `~/.config/keyd/app.conf`, `~/.config/fish/functions/fish_prompt.fish`, `~/.config/systemd/user/default.target.wants/espanso.service` (bağlantı); `~/.config/fish/config.fish` (fish'in varsayılanıydı) dotfiles'taki ile değişti; `~/.config/fish` ve `functions` klasörleri 700 → 755; `~/.gitconfig` aynıydı. `chezmoi verify` temiz.
+- **Henüz işe yaramayanlar:** espanso bağlantısı espanso kurulana kadar boşa gösteriyor (systemd yok sayar; düz Arch'ta AUR `espanso-wayland`, servis dosyası `/usr/lib/systemd/user/espanso.service` olmalı, kurulunca kontrol edilmeli). keyd `app.conf` keyd + `python-dbus` kurulup `/etc/keyd/default.conf` (`[ids] *`, boş `[main]`, boş `[nomap]`) ve otomatik başlatma (`keyd-application-mapper -d`) yapılınca çalışır; kullanıcı `keyd` grubuna girmeli.
+- `~/Documents/nos/` içinde sahibinin bıraktığı `dotfiles-old/` (taşımadan önceki kopya) ve kökte `.chezmoiroot` artık kullanılmıyor; silinip silinmeyeceği sahibinin kararı.
+- Kullanım: ayar değişince depoda düzenle + `chezmoi apply`; ev klasöründe değiştirilen dosyayı depoya almak `chezmoi re-add <dosya>` (ya da `chezmoi add` yeni dosya için); sonra commit.
+
+## Sonraki adım adayları
+
+Sahibiyle adım adım konuşulacak, sorulmadan yapılmaz.
+
+- Eski listelerde olup yeni sistemde olmayan paketler (24 Kasım sayımı; sahibi seçecek): KDE `plasma-pa`, `kscreen`, `kde-gtk-config`, `breeze-gtk`, `kdeconnect`, `plasma-disks`, `plasma-systemmonitor`, `kinfocenter`, `discover`, `flatpak-kcm`; `ufw` + `plasma-firewall`; `snapper` (`btrfs-assistant` var); `keyd` + `python-dbus`; sanal makine `qemu-desktop`, `libvirt`, `dnsmasq`, `edk2-ovmf`, `swtpm`; `podman`, `distrobox`; `switcheroo-control`; `dosfstools`; AUR `espanso-wayland`, `zapret-git`, `cloudflare-warp-bin`. Gerekmeyenler (bootc/kurulum işi ya da başka donanım): `amd-ucode`, `dracut`, `skopeo`, `gum`, `xfsprogs`, `dbus-glib` (bootcrew'un temel listesinden).
+- Eski CLAUDE.md'deki "Düz Arch'a taşınacaklar" listesi: paketler, AUR, servisler, ayar dosyaları, ufw, zram, snapper, keyd, espanso vb.

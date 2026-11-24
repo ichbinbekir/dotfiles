@@ -1,2 +1,5 @@
-# Files not written to the home directory
+# Files in this repo that are not written to the home directory
 README.md
+CLAUDE.md
+old
+old/**

@@ -170,6 +170,16 @@ Sahibi `keyd` paketini kurmuştu (2.6.0); servis kapalı, `/etc/keyd/` boş, kul
 - Kontrol: `systemctl is-active keyd`, `id` içinde `keyd`, yeniden başlattıktan sonra `pgrep -af keyd-application-mapper`; Caps Lock büyük harf açmamalı.
 - Geri almak: `sudo systemctl disable --now keyd; sudo rm /etc/keyd/default.conf; sudo gpasswd -d bekir keyd`; autostart dosyasını depodan ve `~/.config/autostart`'tan silmek.
 
+### root hesabı kilitli (25 Kasım 2026)
+
+Sahibi root'a doğrudan girilmesin, sadece `sudo` ile geçilsin istedi (eski sistemde de root kilitliydi).
+
+- **`sudo passwd -l root`**: `/etc/shadow`'da root'un şifresinin başına `!` konur; şifreyle giriş (tty, SDDM, `su`) olmaz. `sudo -i` / `sudo su` kullanıcının kendi şifresiyle çalışır (`wheel`).
+- **`passwd -d` (şifreyi silmek) kullanılmaz:** Arch'ın `/etc/pam.d/system-auth`'unda `pam_unix.so ... nullok` var; şifresi boş root'a şifresiz girilirdi.
+- Bedeli: sistem açılmayıp acil kurtarma kabuğuna (emergency/rescue) düşerse root kilitli olduğu için kabuk açılmaz. O durumda kurtarma: GRUB'da `e` ile çekirdek satırına `init=/bin/bash`, ya da kurulum USB'si + `arch-chroot`. (İstenirse `SYSTEMD_SULOGIN_FORCE=1` ile kurtarma kabuğu şifresiz açılabilir; sahibine sorulmadı, eklenmedi.)
+- Geri almak: `sudo passwd -u root` (eski şifre geri gelir) ya da `sudo passwd root` ile yeni şifre.
+- Kontrol: `sudo passwd -S root` → ikinci alan `L`.
+
 ## Sonraki adım adayları
 
 Sahibiyle adım adım konuşulacak, sorulmadan yapılmaz.

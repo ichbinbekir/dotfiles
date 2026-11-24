@@ -191,6 +191,16 @@ Docker yerine Podman (Claude'un önerisi, sahibi kabul etti; gerekirse Docker'a 
 - Docker'a geçiş: `sudo pacman -Rns podman` + `docker`; imajlar yeniden indirilir, kapsayıcı/volume'ler taşınmaz. Docker'a bağlı bir araç sorun çıkarırsa önce `podman-docker` (+ `podman.socket` kullanıcı servisi) denenir.
 - Compose: henüz kurulmadı (gerekince `docker-compose` + `podman.socket`, ya da `podman-compose`).
 
+### Paket önbelleği temizliği (25 Kasım 2026)
+
+`/var/cache/pacman/pkg` (btrfs `@cache`) 2.4 GB / 2000 dosyaydı; pacman eski sürümleri hiç silmiyor.
+
+- **`pacman-contrib`** kuruldu (`paccache`).
+- **`/etc/pacman.d/hooks/paccache.hook`**: her pacman işleminden sonra `paccache -rk2` (kurulu her paketin son iki sürümü: şimdiki + geri dönmek için bir önceki) ve `paccache -ruk0` (kaldırılmış paketlerin hepsi). Arch Wiki'deki hook; `paccache.timer` (haftalık) yerine sahibinin isteğiyle hook. Kurulum: geçici klasörden `sudo install -Dm644`; ilk temizlik elle `sudo paccache -rk2; sudo paccache -ruk0`.
+- Bir paketi iki sürümden eskiye düşürmek gerekirse önbellekte olmaz; Arch Archive (`archive.archlinux.org`) kullanılır.
+- yay'ın derleme klasörleri (`~/.cache/yay`, 1.1 GB: cloudflare-warp-bin, helium-browser-bin, visual-studio-code-bin) bunun kapsamında değil; yay bunları kendisi silmiyor. Temizlik: `yay -Sc` (kaldırılmış AUR paketleri + pacman önbelleği sorar) ya da klasörü silmek (sonraki güncellemede yeniden indirilir).
+- Geri almak: `sudo rm /etc/pacman.d/hooks/paccache.hook`.
+
 ## Sonraki adım adayları
 
 Sahibiyle adım adım konuşulacak, sorulmadan yapılmaz.

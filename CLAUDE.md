@@ -155,7 +155,7 @@ Sahibi `~/Documents/nos/.git`'i kaldırdı; `~/Documents/nos/dotfiles/` artık k
 - **`.chezmoiignore`**: `README.md`, `CLAUDE.md`, `old` ev klasörüne yazılmıyor (önceden sadece README vardı; `old/` ve `CLAUDE.md` `~`'a kopyalanacaktı).
 - **README.md** yeni depoya göre yeniden yazıldı (eski metin nos kurulum programından ve `.chezmoiroot`'tan bahsediyordu).
 - `chezmoi apply --force` (önce `chezmoi diff` incelendi): yeni `~/.config/espanso/`, `~/.config/keyd/app.conf`, `~/.config/fish/functions/fish_prompt.fish`, `~/.config/systemd/user/default.target.wants/espanso.service` (bağlantı); `~/.config/fish/config.fish` (fish'in varsayılanıydı) dotfiles'taki ile değişti; `~/.config/fish` ve `functions` klasörleri 700 → 755; `~/.gitconfig` aynıydı. `chezmoi verify` temiz.
-- **Henüz işe yaramayanlar:** espanso bağlantısı espanso kurulana kadar boşa gösteriyor (systemd yok sayar; düz Arch'ta AUR `espanso-wayland`, servis dosyası `/usr/lib/systemd/user/espanso.service` olmalı, kurulunca kontrol edilmeli). keyd: aşağıda.
+- espanso bağlantısı espanso kurulana kadar boşa gösteriyordu; 25 Kasım'da kuruldu (aşağıda "espanso"). keyd: aşağıda.
 - `~/Documents/nos/` içinde sahibinin bıraktığı `dotfiles-old/` (taşımadan önceki kopya) ve kökte `.chezmoiroot` artık kullanılmıyor; silinip silinmeyeceği sahibinin kararı.
 - Kullanım: Documents'taki depoda düzenle → commit + push → `chezmoi update`. Ev klasöründe değiştirilen dosyayı depoya almak `chezmoi re-add <dosya>` (chezmoi'nin kopyasına yazar; oradan `chezmoi git -- commit/push`, sonra Documents'ta `git pull`).
 
@@ -213,6 +213,14 @@ Sahibi kurdu: `libvirt` 12.9, `qemu-desktop`, `virt-manager` (Arch paketi, Flatp
 - Güvenlik duvarı (ufw) henüz yok; kurulursa eski sistemdeki `virbr0` kuralları gerekir (eski CLAUDE.md "Sanallaştırma").
 - Kontrol: `systemctl is-active libvirtd.socket` → active; virt-manager açılınca `systemctl is-active libvirtd` → active, kapatınca ~2 dk sonra inactive; `virsh -c qemu:///system net-list --all` → default active, autostart yes.
 - Geri almak: `sudo systemctl disable --now libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket`; `sudo virsh net-autostart --disable default`.
+
+### espanso (25 Kasım 2026)
+
+Sahibi `yay -S espanso-wayland` ile kurdu (AUR pkgbase `espanso` 2.4.1-2, kaynaktan Rust derlemesi; tarif X11 ve Wayland'i birlikte derliyor, yay sadece Wayland'i kuruyor). `-bin` sürümü bilerek seçilmedi (eski sistemde Debian paketi Arch'ın wxwidgets'ıyla çöküyordu). Derleme için `cargo` sağlayıcısı olarak pacman `rust` (1.100) kuruldu ve sahibinin isteğiyle kalıyor (makedeps kaldırılmadı: `rust`, `xdotool`, `xclip`, `libxtst` vb.).
+- Paketin `.install`'ı `cap_dac_override=p` veriyor (`getcap /usr/bin/espanso`; Wayland'de `/dev/input` okumak için). Servis paketin `/usr/lib/systemd/user/espanso.service`'i; dotfiles'taki `symlink_espanso.service` ile açık (`systemctl --user is-enabled espanso` → enabled). Ayarlar dotfiles'tan (`keyboard_layout: tr`, `:date`, `:time`, `:mail`).
+- Doğrulandı: `espanso status` → running, servis active; sahibi çalıştığını söyledi.
+- Kalanlar: `~/.cargo` 247 MB (Rust kütüphane önbelleği), `~/.cache/yay/espanso` 82 MB (yay derleme klasörü; güncellemede yeniden kullanılır).
+- Tamamen silmek: `yay -Rns espanso-wayland` (+ istenirse `rust` ve derleme bağımlılıkları), `rm -rf ~/.cargo ~/.cache/yay/espanso ~/.config/espanso`; dotfiles'taki espanso dosyaları ve servis bağlantısı.
 
 ### Krohnkite (döşeme KWin betiği; 25 Kasım 2026)
 

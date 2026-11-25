@@ -246,12 +246,12 @@ Sahibinin kararı: her araç **kendi varsayılan yerine** kursun (taşıma/yönl
 - **Henüz yapılmayanlar:** telefon için USB/udev.
 - **Tamamen silmek için (hiç kurulmamış gibi):** `sudo pacman -Rns fvm jdk17-openjdk` ve `rm -rf ~/fvm ~/Android ~/.android ~/.gradle ~/.pub-cache ~/.dart-tool ~/.config/flutter`; varsa `~/.dartServer`, `~/.flutter-devtools`, `~/.kotlin` (VS Code Dart eklentisi, DevTools, Kotlin daemon) ve `~/.config/plasma-workspace/env/flutter.sh` (dotfiles'tan da: `dot_config/plasma-workspace/`). Yeni bir yer görülürse bu listeye eklenmeli.
 
-### Uykudan sonra kararan ekran (25 Kasım 2026, sürüyor)
+### Uykudan sonra kararan ekran (25 Kasım 2026, sahibi şimdilik bıraktı)
 
 Eski CLAUDE.md'deki sorun düz Arch'ta da var. Ekran Intel'de (i915, `eDP-1`) ama parlaklık EC üzerinden `nvidia_wmi_ec_backlight` (`type=firmware`, max 254); i915 "Skipping intel_backlight registration". Derin uykudan (`/sys/power/mem_sleep` `s2idle [deep]`, `PM: suspend entry (deep)`) sonra ekran karanlık kalıyor, yeniden başlatınca düzeliyor. Uykusuz açılışta da `brightness=77`, `actual_brightness=110` (ayrışık).
 - Bilinen sorun: NVIDIA'nın Daniel Dadap'ı yazmış, bazı yazılımlar uykudan dönüşte EC parlaklığını sıfırlıyor, çekirdek eski değeri tutuyor; `restore_level_on_resume` yaması (lore 20220316012516.2233984-1-ddadap@nvidia.com) çekirdeğe girmemiş (7.3.5'te `modinfo -p nvidia_wmi_ec_backlight` sadece `force`). Acer Predator PH317-56'da aynı (NVIDIA forum 294917, 337768).
 - **Denendi, işe yaramadı: `acpi_backlight=native`** (tek açılış, GRUB `e`): `intel_backlight` (max 19200) ve `nvidia_0` geliyor ama parlaklık çubuğu ekranı değiştirmiyor. Kalıcı yapılmadı.
-- **Sıradaki deneme (önerildi):** tek açılışlık `echo s2idle | sudo tee /sys/power/mem_sleep` ile uyutup uyandırmak (derin uykudaki yazılım adımı çalışmaz). İşe yararsa pil tüketimi ölçülüp kalıcı olarak `mem_sleep_default=s2idle` (GRUB) düşünülür.
+- **Sıradaki deneme (önerildi, sahibi şimdilik denemedi):** tek açılışlık `echo s2idle | sudo tee /sys/power/mem_sleep` ile uyutup uyandırmak (derin uykudaki yazılım adımı çalışmaz). İşe yararsa pil tüketimi ölçülüp kalıcı olarak `mem_sleep_default=s2idle` (GRUB) düşünülür.
 
 ### GRUB yavaş çiziyordu (25 Kasım 2026)
 

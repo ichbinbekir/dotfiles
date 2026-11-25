@@ -15,6 +15,9 @@ Contents:
 - keyd: per-window key mapping (ESDF in Sober/Roblox, Caps Lock → F19); `dot_config/autostart/` starts
   `keyd-application-mapper` at login (needs the system-wide `/etc/keyd/default.conf`,
   `python-dbus`, and the user in the `keyd` group)
+- environment.d: `ANDROID_HOME` and `PATH` for Flutter (FVM in `~/fvm`) and the Android SDK
+  (`~/Android/Sdk`); read by systemd at login, so every app in the session gets them
+  (log out and back in after a change)
 
 Not copied to the home folder (`.chezmoiignore`): this README, `CLAUDE.md`, `old/` (earlier
 Hyprland setup, kept for reference).

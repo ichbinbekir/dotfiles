@@ -212,6 +212,13 @@ Sahibi kurdu: `libvirt` 12.9, `qemu-desktop`, `virt-manager` (Arch paketi, Flatp
 - Kontrol: `systemctl is-active libvirtd.socket` → active; virt-manager açılınca `systemctl is-active libvirtd` → active, kapatınca ~2 dk sonra inactive; `virsh -c qemu:///system net-list --all` → default active, autostart yes.
 - Geri almak: `sudo systemctl disable --now libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket`; `sudo virsh net-autostart --disable default`.
 
+### Krohnkite (döşeme KWin betiği; 25 Kasım 2026)
+
+Sahibi kurdu: `~/.local/share/kwin/scripts/krohnkite` (Plasma 6 sürümü). Ayarlar `~/.config/kwinrc` `[Script-krohnkite]`'te (KDE ayarı; dotfiles'a henüz girmiyor, sahibi KDE ayarları için karar vermedi).
+- `focusMoveVDesktopsNormal=false`: odak tuşları (Meta+yön) kenarda başka masaüstüne geçmesin (sahibi Sistem Ayarları'ndan kapattı; "Normal" bölümündeki 2. kutu).
+- `noTileBorder=true`: döşenen pencerelerin kenarlığı/başlığı yok (Options sekmesi).
+- **`ignoreClass=qemu-system-x86_64`** (`kwriteconfig6` ile): Android emülatörü döşenip esnetiliyordu. Bu sürümde "yüzsün" sınıf listesi (`floatingClass`) yok; `ignoreClass` pencereyi hiç yönetmiyor, normal yüzen pencere gibi açılıyor. Krohnkite `resourceClass` ve `resourceName`'e bakıyor; emülatörün iki penceresi (telefon + yan araç çubuğu) `class=Emulator name=qemu-system-x86_64` (KWin betiğiyle `workspace.windowList()` okundu; geçici betik kaldırıldı). Genel "Emulator" sınıfı yerine program adı yazıldı. Ayar okunsun diye `[Plugins] krohnkiteEnabled` false/true + `org.kde.KWin.reconfigure`. Yeni sınıf eklemek: virgülle (`ignoreClass=a,b`). Geri almak: `kwriteconfig6 --file kwinrc --group Script-krohnkite --key ignoreClass --delete` + Krohnkite'ı kapat/aç.
+
 ### Flutter + Android (25 Kasım 2026, sürüyor)
 
 Sahibinin kararı: her araç **kendi varsayılan yerine** kursun (taşıma/yönlendirme yok); yeter ki nereye kurulduğu burada yazılı olsun ve gerekince hepsi iz bırakmadan silinebilsin. AUR'dan hiçbir şey yok: AUR `android-sdk*` paketleri root'a ait `/opt/android-sdk`'ya kuruyor, Gradle/Flutter eksik parçayı (NDK, build-tools sürümü) oraya yazamıyor, pacman'in ve Gradle'ın dosyaları karışıyor. Resmi depodaki `android-tools` (adb) da kurulmaz: SDK'nın adb'siyle sürüm çakışması. pacman'deki `gradle` gereksiz: Flutter her projenin `gradlew` başlatıcısını kullanıyor, o da projede yazan Gradle sürümünü kendisi indiriyor. Hedef sadece Android (emülatör şart, belki USB hata ayıklamayla telefon); web ve Linux masaüstü yok. Adım adım; sahibi demeden sonraki adıma geçilmez.

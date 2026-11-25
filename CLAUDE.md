@@ -48,6 +48,8 @@ SDDM paketin varsayılanıyla X11'de çalışıyordu (`/usr/lib/sddm/sddm.conf.d
 - `xorg-server` sddm'in bağımlılığı olarak kurulu kalıyor, kullanılmıyor.
 - Geri almak: `sudo rm -r /etc/sddm.conf.d`.
 - Kontrol: girişten sonra `pgrep -a Xorg` boş olmalı. NVIDIA kartının boştayken uyuması ayrıca çekirdek 7.3'teki RTD3 sorununa bağlı (eski CLAUDE.md "Hibrit grafik"), bu ayar onu çözmez.
+- **Ölçek (25 Kasım):** giriş ekranı çok büyüktü: sahibinin ölçeği %125 (`~/.config/kwinoutputconfig.json`, `eDP-1` 2560×1600), SDDM'nin KWin'i ise kendi seçtiği ölçekle açılıyordu. Sahibi Sistem Ayarları → Giriş Ekranı (SDDM) → "Apply Plasma Settings…" ile düzeltti (doğruladı). Bu düğme (`/usr/lib/kf6/kauth/kcmsddm_authhelper`) sadece `kdeglobals`, `plasmarc`, `kcminputrc`, `kwinoutputconfig.json`'u `/var/lib/sddm/.config/`'e kopyalıyor; ekran/tema/yazı tipi değişince yeniden basılmalı. `/etc/sddm.conf` (`[Theme] Current=breeze` vb.) de bu KCM'nin yazdığı dosya.
+- **Gece ışığı (25 Kasım, komutlar verildi, sonuç bekleniyor):** düğme `kwinrc`'yi kopyalamadığı için giriş ekranında kapalıydı. Sahibinin `[NightColor]`'ı `Active=true`, `Mode=Constant` (sıcaklık varsayılan 4500K, konum gerekmez). Komutlar: `sudo -u sddm env HOME=/var/lib/sddm kwriteconfig6 --file /var/lib/sddm/.config/kwinrc --group NightColor --key Active true` ve aynısı `--key Mode Constant` (dosya `sddm` kullanıcısına ait olsun diye `-u sddm`). Sahibi gece ışığı ayarını (sıcaklık, mod) değiştirirse buraya da elle yazılmalı. Geri almak: `sudo -u sddm env HOME=/var/lib/sddm kwriteconfig6 --file /var/lib/sddm/.config/kwinrc --group NightColor --key Active --delete`.
 
 ### Açılış animasyonu (plymouth) (24 Kasım 2026)
 

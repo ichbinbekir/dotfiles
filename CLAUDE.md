@@ -201,9 +201,20 @@ Docker yerine Podman (Claude'un önerisi, sahibi kabul etti; gerekirse Docker'a 
 - yay'ın derleme klasörleri (`~/.cache/yay`, 1.1 GB: cloudflare-warp-bin, helium-browser-bin, visual-studio-code-bin) bunun kapsamında değil; yay bunları kendisi silmiyor. Temizlik: `yay -Sc` (kaldırılmış AUR paketleri + pacman önbelleği sorar) ya da klasörü silmek (sonraki güncellemede yeniden indirilir).
 - Geri almak: `sudo rm /etc/pacman.d/hooks/paccache.hook`.
 
+### Sanal makineler: libvirt (25 Kasım 2026)
+
+Sahibi kurdu: `libvirt` 12.9, `qemu-desktop`, `virt-manager` (Arch paketi, Flatpak değil), `dnsmasq`, `edk2-ovmf`, `swtpm`. Kullanıcı `libvirt` grubunda (paketin sysusers'ından grup; sahibi eklemiş). Hiçbir libvirt birimi açık değildi, virt-manager bağlanamıyordu.
+
+- **`libvirtd.socket` açıldı** (`enable --now`; `Also=` ile `libvirtd-ro.socket`, `libvirtd-admin.socket` de). Eski sistemdeki gibi tek parça (monolithic) daemon, soketle: açılışta sadece soket dinler (süreç yok), virt-manager bağlanınca `libvirtd` başlar, boşta 120 sn sonra kapanır (`libvirtd.service`'te `LIBVIRTD_ARGS="--timeout 120"`). **`libvirtd.service` açılmaz** (açılırsa açılışta başlar ve sürekli çalışır; eski sistemde sahibi elle açmıştı, "gereksiz açılış" buydu). `virtlogd`/`virtlockd` libvirtd başlarken gerekirse kendiliğinden gelir.
+- Modüler daemon'lar (`virtqemud` vb.) kullanılmıyor; ikisi birlikte açılmamalı.
+- **`default` NAT ağı autostart** (`sudo virsh net-autostart default`; `/etc/libvirt/qemu/networks/autostart/default.xml` bağlantısı): libvirtd her başladığında ağ (virbr0 + dnsmasq) kalkar; açılışta değil. libvirtd kapandıktan sonra ağ (dnsmasq) açık kalır, zararsız.
+- Güvenlik duvarı (ufw) henüz yok; kurulursa eski sistemdeki `virbr0` kuralları gerekir (eski CLAUDE.md "Sanallaştırma").
+- Kontrol: `systemctl is-active libvirtd.socket` → active; virt-manager açılınca `systemctl is-active libvirtd` → active, kapatınca ~2 dk sonra inactive; `virsh -c qemu:///system net-list --all` → default active, autostart yes.
+- Geri almak: `sudo systemctl disable --now libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket`; `sudo virsh net-autostart --disable default`.
+
 ## Sonraki adım adayları
 
 Sahibiyle adım adım konuşulacak, sorulmadan yapılmaz.
 
-- Eski listelerde olup yeni sistemde olmayan paketler (24 Kasım sayımı; sahibi seçecek): KDE `plasma-pa`, `kscreen`, `kde-gtk-config`, `breeze-gtk`, `kdeconnect`, `plasma-disks`, `plasma-systemmonitor`, `kinfocenter`, `discover`, `flatpak-kcm`; `ufw` + `plasma-firewall`; `snapper` (`btrfs-assistant` var); sanal makine `qemu-desktop`, `libvirt`, `dnsmasq`, `edk2-ovmf`, `swtpm`; `distrobox`; `switcheroo-control`; `dosfstools`; AUR `espanso-wayland`, `zapret-git`, `cloudflare-warp-bin`. Gerekmeyenler (bootc/kurulum işi ya da başka donanım): `amd-ucode`, `dracut`, `skopeo`, `gum`, `xfsprogs`, `dbus-glib` (bootcrew'un temel listesinden).
+- Eski listelerde olup yeni sistemde olmayan paketler (24 Kasım sayımı; sahibi seçecek): KDE `plasma-pa`, `kscreen`, `kde-gtk-config`, `breeze-gtk`, `kdeconnect`, `plasma-disks`, `plasma-systemmonitor`, `kinfocenter`, `discover`, `flatpak-kcm`; `ufw` + `plasma-firewall`; `snapper` (`btrfs-assistant` var); `distrobox`; `switcheroo-control`; `dosfstools`; AUR `espanso-wayland`, `zapret-git`, `cloudflare-warp-bin`. Gerekmeyenler (bootc/kurulum işi ya da başka donanım): `amd-ucode`, `dracut`, `skopeo`, `gum`, `xfsprogs`, `dbus-glib` (bootcrew'un temel listesinden).
 - Eski CLAUDE.md'deki "Düz Arch'a taşınacaklar" listesi: paketler, AUR, servisler, ayar dosyaları, ufw, zram, snapper, keyd, espanso vb.

@@ -131,7 +131,7 @@ RAM dolunca donma yerine baskıyı yapan uygulamayı kapatır. Arch'ta hiçbir b
 
 - Zamanın çoğu GRUB (menüde `GRUB_TIMEOUT=5` bekleme + dosya okuma) ve BIOS'ta.
 - **`/etc/default/grub`'a `GRUB_EARLY_INITRD_LINUX_STOCK=''` eklendi** (dosyanın sonuna; Arch Wiki, Microcode): `/boot/intel-ucode.img` (16 MB) GRUB'a ayrıca initrd olarak ekleniyordu, oysa mkinitcpio'nun `microcode` hook'u mikrokodu zaten initramfs'e koyuyor (çift yükleme). Ardından `grub-mkconfig`. Geri almak: satırı silip `grub-mkconfig -o /boot/grub/grub.cfg`. `/boot/intel-ucode.img` dosyası `intel-ucode` paketinin, durur (silinmez).
-- Menü süresi `GRUB_TIMEOUT=5` kalıyor (sahibinin kararı).
+- Menü süresi: önce `GRUB_TIMEOUT=5` kaldı (sahibinin kararı); 25 Kasım'da sahibi 3 sn istedi (`sed` + `grub-mkconfig` komutları verildi; aşağıda "GRUB yavaş çiziyordu").
 - BIOS süresi (14 sn) Linux'tan düzeltilemez; Acer BIOS'unda "Fast Boot" varsa sahibi bakabilir.
 
 ### SSH anahtarları (24 Kasım 2026)
@@ -255,7 +255,7 @@ Eski CLAUDE.md'deki sorun düz Arch'ta da var. Ekran Intel'de (i915, `eDP-1`) am
 
 ### GRUB yavaş çiziyordu (25 Kasım 2026)
 
-`GRUB_GFXMODE=auto` 2560×1600'ü seçiyor, UEFI GOP çizimi çok yavaş (menü "donuyor"). Önerilen: `/etc/default/grub`'da `GRUB_GFXMODE=1280x800,auto` (aynı oran; desteklenmezse `auto`'ya düşer) + `sudo grub-mkconfig -o /boot/grub/grub.cfg`. `GRUB_GFXPAYLOAD_LINUX=keep` kalıyor; i915 yüklenince ekran tam çözünürlüğe geçiyor. Sahibine komutlar verildi, sonuç bekleniyor. Geri almak: değeri `auto` yapıp `grub-mkconfig`.
+`GRUB_GFXMODE=auto` 2560×1600'ü seçiyor, UEFI GOP çizimi çok yavaş (menü "donuyor"). Önerilen: `/etc/default/grub`'da `GRUB_GFXMODE=1280x800,auto` (aynı oran; desteklenmezse `auto`'ya düşer) + `sudo grub-mkconfig -o /boot/grub/grub.cfg`. `GRUB_GFXPAYLOAD_LINUX=keep` kalıyor; i915 yüklenince ekran tam çözünürlüğe geçiyor. Sahibi `/etc/default/grub`'u değiştirdi (doğrulandı). Aynı anda `GRUB_TIMEOUT=5` → `3` (sahibinin isteği). İkisi için `grub-mkconfig` çalıştırılmalı; sonuç bekleniyor. Geri almak: değerleri `auto`/`5` yapıp `grub-mkconfig`.
 
 ## Sonraki adım adayları
 

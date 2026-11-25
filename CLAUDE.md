@@ -210,7 +210,7 @@ Sahibi kurdu: `libvirt` 12.9, `qemu-desktop`, `virt-manager` (Arch paketi, Flatp
 - **`libvirtd.socket` açıldı** (`enable --now`; `Also=` ile `libvirtd-ro.socket`, `libvirtd-admin.socket` de). Eski sistemdeki gibi tek parça (monolithic) daemon, soketle: açılışta sadece soket dinler (süreç yok), virt-manager bağlanınca `libvirtd` başlar, boşta 120 sn sonra kapanır (`libvirtd.service`'te `LIBVIRTD_ARGS="--timeout 120"`). **`libvirtd.service` açılmaz** (açılırsa açılışta başlar ve sürekli çalışır; eski sistemde sahibi elle açmıştı, "gereksiz açılış" buydu). `virtlogd`/`virtlockd` libvirtd başlarken gerekirse kendiliğinden gelir.
 - Modüler daemon'lar (`virtqemud` vb.) kullanılmıyor; ikisi birlikte açılmamalı.
 - **`default` NAT ağı autostart** (`sudo virsh net-autostart default`; `/etc/libvirt/qemu/networks/autostart/default.xml` bağlantısı): libvirtd her başladığında ağ (virbr0 + dnsmasq) kalkar; açılışta değil. libvirtd kapandıktan sonra ağ (dnsmasq) açık kalır, zararsız.
-- Güvenlik duvarı (ufw) henüz yok; kurulursa eski sistemdeki `virbr0` kuralları gerekir (eski CLAUDE.md "Sanallaştırma").
+- Güvenlik duvarı: ufw 25 Kasım'da kuruldu, eski sistemdeki üç `virbr0` kuralı eklendi (aşağıda "Güvenlik duvarı: ufw").
 - Kontrol: `systemctl is-active libvirtd.socket` → active; virt-manager açılınca `systemctl is-active libvirtd` → active, kapatınca ~2 dk sonra inactive; `virsh -c qemu:///system net-list --all` → default active, autostart yes.
 - Geri almak: `sudo systemctl disable --now libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket`; `sudo virsh net-autostart --disable default`.
 
@@ -257,9 +257,32 @@ Eski CLAUDE.md'deki sorun düz Arch'ta da var. Ekran Intel'de (i915, `eDP-1`) am
 
 `GRUB_GFXMODE=auto` 2560×1600'ü seçiyor, UEFI GOP çizimi çok yavaş (menü "donuyor"). Önerilen: `/etc/default/grub`'da `GRUB_GFXMODE=1280x800,auto` (aynı oran; desteklenmezse `auto`'ya düşer) + `sudo grub-mkconfig -o /boot/grub/grub.cfg`. `GRUB_GFXPAYLOAD_LINUX=keep` kalıyor; i915 yüklenince ekran tam çözünürlüğe geçiyor. Sahibi `/etc/default/grub`'u değiştirdi (doğrulandı). Aynı anda `GRUB_TIMEOUT=5` → `3` (sahibinin isteği). İkisi için `grub-mkconfig` çalıştırılmalı; sonuç bekleniyor. Geri almak: değerleri `auto`/`5` yapıp `grub-mkconfig`.
 
+### GameMode ayarı (25 Kasım 2026)
+
+**`/etc/gamemode.ini`** (eski sistemin `core/system_files/etc/gamemode.ini`'sinin aynısı; Claude geçici klasöre yazdı, sahibi `sudo install -Dm644` ile kopyaladı): `[general]` `desiredgov`/`defaultgov`/`igpu_desiredgov` = `powersave`. Sebep (eski CLAUDE.md "GameMode + power-profiles-daemon çakışması"): GameMode varsayılanda yöneticiyi `performance` yapıyor, intel_pstate'te EPP kilitleniyor, oyun açıkken KDE'den güç modu değişmiyordu. GameMode'un diğer işleri sürüyor. Dosya paketin değil (`gamemode` 1.8.2 `/etc`'ye ini koymuyor). Geri almak: `sudo rm /etc/gamemode.ini`.
+
+### Güvenlik duvarı: ufw (25 Kasım 2026)
+
+Sahibi `ufw` 0.36.2'yi kurdu; komutları sahibi çalıştırdı: `ufw default deny incoming`, `default allow outgoing`, `allow in on virbr0` (libvirt DHCP/DNS), `route allow in on virbr0` + `route allow out on virbr0` (sanal makinelerin interneti; `DEFAULT_FORWARD_POLICY="DROP"` yüzünden), `ufw enable` (`/etc/ufw/ufw.conf` `ENABLED=yes`), `systemctl enable ufw`. `ufw status verbose` doğrulandı (IPv4 + IPv6). KDE Connect kurulu değil, portları (1714–1764 TCP/UDP) açılmadı; kurulursa `ufw allow 1714:1764/tcp` ve `/udp` gerekir. Yerel bağlantılar (loopback: Ollama, adb, emülatör, Flutter) etkilenmiyor. `plasma-firewall` kurulmadı (sahibi terminal tercih ediyor). Not: `ufw.service` `--now` olmadan açıldığı için o oturumda `inactive` görünüyordu; duvar `ufw enable` ile zaten etkindi. Geri almak: `sudo ufw disable` + `sudo systemctl disable ufw`.
+
+### dosfstools (25 Kasım 2026)
+
+Sahibi kurdu. `/boot/efi` (vfat) fstab'da `passno 2` ama `fsck.vfat` olmadığı için açılış kontrolü sessizce atlanıyordu (systemd-fstab-generator fsck birimi oluşturmuyor). Ayrıca `mkfs.fat` (USB biçimlendirme, KDE bölüm yöneticisi).
+
+### Ayna listesi: reflector (25 Kasım 2026)
+
+Kurulumdan gelen `/etc/pacman.d/mirrorlist` (Haziran 2026, bütün aynalar ülke alfabetik) Türk aynalarıyla başlıyordu; sahibinin bazı ağlarında (sık ağ değiştiriyor: mobil veri, farklı Wi-Fi'ler) `tr.arch.niranjan.co` ve `mirror.timtal.com.tr` "Connection timed out after 10001 milliseconds" veriyordu. Sahibi `reflector` (2023-5) kurdu.
+- **`/etc/xdg/reflector/reflector.conf`** (paketin düzenlenmek için koyduğu, `backup=` dosyası; Claude yazdı, sahibi `sudo install -m644` ile kopyaladı): `--save /etc/pacman.d/mirrorlist --protocol https --country Germany,Netherlands --age 12 --completion-percent 100 --sort score --number 10`. **`--sort rate` bilerek kullanılmadı:** hızı o anki ağda ölçüyor, ağ değişince yanlış olur; `score` Arch'ın aynı durum sunucusunun ağdan bağımsız puanı. Türkiye listede yok (takılıyordu).
+- `reflector.service` bir kez çalıştırıldı, `reflector.timer` açık (haftalık). Sonuç: Frankfurt/Berlin `mirror.pkgbuild.com` + 8 Alman ayna. Elle yenilemek: `sudo systemctl start reflector.service`.
+- Geri almak: `sudo systemctl disable reflector.timer`, `sudo pacman -Rns reflector` (mirrorlist kalır; başka liste için `pacman-mirrorlist` paketinin `.pacnew`'i ya da elle).
+
 ## Sonraki adım adayları
 
 Sahibiyle adım adım konuşulacak, sorulmadan yapılmaz.
 
-- Eski listelerde olup yeni sistemde olmayan paketler (24 Kasım sayımı; sahibi seçecek): KDE `plasma-pa`, `kscreen`, `kde-gtk-config`, `breeze-gtk`, `kdeconnect`, `plasma-disks`, `plasma-systemmonitor`, `kinfocenter`, `discover`, `flatpak-kcm`; `ufw` + `plasma-firewall`; `snapper` (`btrfs-assistant` var); `distrobox`; `switcheroo-control`; `dosfstools`; AUR `espanso-wayland`, `zapret-git`, `cloudflare-warp-bin`. Gerekmeyenler (bootc/kurulum işi ya da başka donanım): `amd-ucode`, `dracut`, `skopeo`, `gum`, `xfsprogs`, `dbus-glib` (bootcrew'un temel listesinden).
+- Eski listelerde olup yeni sistemde olmayanlar (25 Kasım kontrolü; kurulu olanlar: `plasma-pa`, `kscreen`, `kde-gtk-config`, `breeze-gtk`, `btrfs-assistant`, `cloudflare-warp-bin`, `espanso-wayland`, `gamemode`, `keyd`, `nvidia-prime`, `ufw`, `dosfstools`):
+  - **Sahibi şimdilik bekletiyor:** `zapret-git` (+ eski sistemdeki `/etc/zapret` ayarları ve engelli ağ notları) ve **snapper** (`btrfs-assistant` kurulu ama snapper yok, hiç görüntü alınmıyor; öneri: kök için snapper + `snap-pac` + GRUB'dan görüntüye açılış `grub-btrfs`; fstab'da `@snapshots` → `/.snapshots` alt birimi zaten var).
+  - **Sahibi istemedi:** `switcheroo-control` (hiç kullanmamış; `prime-run` var), `plasma-firewall`.
+  - **Şimdilik yok:** `kdeconnect` (kurulursa ufw portları). Sorulmadı ya da kararsız: `plasma-disks` (SMART uyarısı; önerildi), `discover` + `flatpak-kcm` (Flatpak kurulu), `plasma-systemmonitor`, `kinfocenter` (sahibi terminal tercih ediyor).
+  - **Düz Arch'ta gerekmeyen:** `distrobox` (bootc yüzünden gerekiyordu), `systemd-resolved` (NetworkManager yetiyor; zapret notlarındaki DoT istenirse gerekir). Bootc/kurulum işi ya da başka donanım: `amd-ucode`, `dracut`, `skopeo`, `gum`, `xfsprogs`, `dbus-glib`.
 - Eski CLAUDE.md'deki "Düz Arch'a taşınacaklar" listesi: paketler, AUR, servisler, ayar dosyaları, ufw, zram, snapper, keyd, espanso vb.

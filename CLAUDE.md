@@ -212,6 +212,17 @@ Sahibi kurdu: `libvirt` 12.9, `qemu-desktop`, `virt-manager` (Arch paketi, Flatp
 - Kontrol: `systemctl is-active libvirtd.socket` → active; virt-manager açılınca `systemctl is-active libvirtd` → active, kapatınca ~2 dk sonra inactive; `virsh -c qemu:///system net-list --all` → default active, autostart yes.
 - Geri almak: `sudo systemctl disable --now libvirtd.socket libvirtd-ro.socket libvirtd-admin.socket`; `sudo virsh net-autostart --disable default`.
 
+### Flutter + Android (25 Kasım 2026, sürüyor)
+
+Plan (sahibiyle konuşuldu, adım adım; sahibi demeden sonraki adıma geçilmez): her şey kullanıcı klasöründe, AUR'dan hiçbir şey yok. AUR `android-sdk*` paketleri bilerek kullanılmıyor: root'a ait `/opt/android-sdk`'ya kuruyorlar, Gradle/Flutter eksik parçayı (NDK, build-tools sürümü) oraya yazamıyor, pacman'in ve Gradle'ın dosyaları karışıyor. Resmi depodaki `android-tools` (adb) da kurulmaz: SDK'nın adb'siyle sürüm çakışması. Hedef sadece Android (emülatör şart, belki USB hata ayıklamayla telefon); web ve Linux masaüstü yok.
+
+- **Java:** `jdk17-openjdk` (pacman; sahibi kurmuş).
+- **FVM:** `extra/fvm` 4.3.2 (pacman; sahibi kurdu). Önbellek yolu sahibinin `fvm config --cache-path ~/.local/share/fvm` komutuyla `~/.config/fvm/.fvmrc`'de (`FVM_CACHE_PATH` gerekmiyor). Flutter 3.50.1 `~/.local/share/fvm/versions/3.50.1`, `default` bağlantısı ona (sahibi `fvm global` yapmış). `cache.git` 504 MB (FVM'nin Flutter deposu aynası). `.fvmrc` henüz dotfiles'a eklenmedi.
+- **Flutter'ın ev klasörüne açtıkları:** `~/.pub-cache`, `~/.dart-tool`, `~/.config/flutter`. Sahibi bunların yerinde kalmasına razı (`PUB_CACHE` taşınmıyor).
+- **Android cmdline-tools 23.0** (Google'ın zip'i `commandlinetools-linux-16111833_latest.zip`, SHA-1 `repository2-3.xml`'deki değerle doğrulandı): `~/.local/share/android/cmdline-tools/latest/` (sdkmanager'ın beklediği düzen; SDK kökü `~/.local/share/android`), 173 MB. İndirme geçici klasörde yapıldı ve silindi. 23.0'da `sdkmanager` "deprecated" uyarısı veriyor: yerini aynı klasördeki `android` aracı (`android sdk ...`, "Android CLI" 1.1) alıyor; `sdkmanager` hâlâ çalışıyor.
+- **Henüz yapılmayanlar:** ortam değişkenleri ve `PATH` (sahibi şimdilik istemedi; plan `~/.config/environment.d/flutter.conf`: `ANDROID_HOME` vb. + dotfiles), SDK parçaları (platform-tools, emulator, platform, build-tools, sistem imajı), AVD, Flutter analitiklerinin kapatılması, `flutter doctor`, telefon için USB/udev.
+- Geri almak: `rm -rf ~/.local/share/android`.
+
 ## Sonraki adım adayları
 
 Sahibiyle adım adım konuşulacak, sorulmadan yapılmaz.

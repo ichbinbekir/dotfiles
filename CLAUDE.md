@@ -276,6 +276,14 @@ Kurulumdan gelen `/etc/pacman.d/mirrorlist` (Haziran 2026, bütün aynalar ülke
 - `reflector.service` bir kez çalıştırıldı, `reflector.timer` açık (haftalık). Sonuç: Frankfurt/Berlin `mirror.pkgbuild.com` + 8 Alman ayna. Elle yenilemek: `sudo systemctl start reflector.service`.
 - Geri almak: `sudo systemctl disable reflector.timer`, `sudo pacman -Rns reflector` (mirrorlist kalır; başka liste için `pacman-mirrorlist` paketinin `.pacnew`'i ya da elle).
 
+### VLC: donanım çözme kapalı (27 Kasım 2026)
+
+Samsung telefon ekran kaydı (`Screen_Recording_20260822_153717_Brave.mp4`: H.264 High 5.0, 1080×2254 dikey, değişken kare hızı ~34 fps, AAC) VLC 3.0.24'te açılmıyordu. Dosya sağlam (ffmpeg hatasız çözüyor; ffmpeg `-hwaccel vaapi` ile Intel `renderD128`'de de hatasız). VLC'nin Qt arayüzü `glconv_vaapi_x11` (XWayland üzerinden Intel iHD 26.3.5) kullanıyor, her karede `Failed to end picture decode issue: 23 (internal decoding error)` + `buffer deadlock prevented`. `--avcodec-hw=none` ile hatasız.
+- **Sahibi VLC Tercihler → Giriş/Kodekler → Donanım hızlandırmalı çözme → Devre dışı yaptı:** `~/.config/vlc/vlcrc` `avcodec-hw=none` (doğrulandı, sahibi çalıştığını söyledi). Videolar işlemciyle çözülüyor (i7-13620H için küçük yük; pilde biraz fazla).
+- `vlcrc` dotfiles'a konmadı: VLC'nin ürettiği 3700 satırlık dosya, chezmoi tek satırı yönetemiyor. Yeni sistemde bu ayar elle yapılmalı.
+- Geri almak: aynı ayarı "Otomatik" yapmak (`avcodec-hw=any`). Not: VLC aynı ayarda "otomatik" olunca VA-API'yi seçiyor; `-V dummy` testinde ise NVIDIA VDPAU'yu seçti (kartı uyandırır), o yüzden VDPAU seçeneği de önerilmez.
+- Videonun aynı iki kopyası var: `~/Desktop` ve `~/Documents/nos` (sahibine söylendi).
+
 ## Sonraki adım adayları
 
 Sahibiyle adım adım konuşulacak, sorulmadan yapılmaz.

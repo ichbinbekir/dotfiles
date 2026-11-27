@@ -9,7 +9,10 @@ Contents:
 - fish: `arrow` prompt, greeting off, `~/.local/bin` in `PATH`
 - git: user name and email
 - espanso: text abbreviations (`:date`, `:time`, `:mail`), Turkish Q layout
-  (start it at login once per machine: `systemctl --user enable --now espanso`)
+  (start it at login once per machine: `systemctl --user enable --now espanso`);
+  `dot_config/systemd/user/espanso.service.d/` makes that enable start espanso with the Plasma
+  desktop (`graphical-session.target`) instead of right at login, where it crashed once because the
+  Wayland compositor wasn't up yet
 - keyd: per-window key mapping (ESDF in Sober/Roblox, Caps Lock → F19); `dot_config/autostart/` starts
   `keyd-application-mapper` at login (needs the system-wide `/etc/keyd/default.conf`,
   `python-dbus`, and the user in the `keyd` group)
